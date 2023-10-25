@@ -26,6 +26,8 @@ in
   boot.initrd.luks.devices."luks-9442067a-747f-4add-b871-0b2b1874bc9d".device = "/dev/disk/by-uuid/9442067a-747f-4add-b871-0b2b1874bc9d";
   boot.initrd.luks.devices."luks-9442067a-747f-4add-b871-0b2b1874bc9d".keyFile = "/crypto_keyfile.bin";
 
+  boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
+
   #programs.nix-ld.enable = true;
 
   networking.hostName = "nixos"; # Define your hostname.
@@ -114,6 +116,9 @@ in
       esbuild
       postman
       libreoffice
+      alacritty
+      gnome.ghex
+      netbeans
     ];
   };
 
@@ -126,12 +131,14 @@ in
         coc-json
         coc-prettier
         coc-tsserver
+        coc-java
       ];
       settings = {
         ignorecase = true;
         smartcase = true;
       };
       extraConfig = ''
+        set shell=/bin/sh
         set encoding=utf-8
         set ttymouse=sgr
 
@@ -263,6 +270,7 @@ in
     pkg-config
     bison
     openvpn
+    zlib
   ];
 
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
@@ -293,6 +301,7 @@ in
   #};
   virtualisation.libvirtd.enable = true;
   programs.dconf.enable = true;
+  programs.java.enable = true;
 
   # List services that you want to enable:
 
