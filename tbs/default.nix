@@ -28,15 +28,15 @@ stdenv.mkDerivation {
     (fetchFromGitHub {
       owner = "tbsdtv";
       repo = "linux_media";
-      rev = "e1e06d78177e55ca126774867685c10dafcd3abb";
-      sha256 = "sUTkMiKwcp2//r/Zw5u2jF/qVscqf7jZkhMCwhroQEw=";
+      rev = "bfcdb6fc52a62ee744969cc97017615aa8507c98";
+      sha256 = "7uySrDtNTFqCR34Hdeth5g+X+EYkDUjjiqW/20qCMQs=";
       name = "media";
     })
     (fetchFromGitHub {
       owner = "tbsdtv";
       repo = "media_build";
-      rev = "9a225f4da01944fd34e1f9cf113da0d0d6f40820";
-      sha256 = "rKZShzj+1HQIJf5sKA7qMFXPK5ULJjCt2Q0an/owfJQ=";
+      rev = "420e14387917911750a50f2426f4e9f612c76d7e";
+      sha256 = "9JwWNRJVYRw5qOEnhogMYLf5hMLh/gXmy7LNSNSXN9M=";
       name = "source";
     })
   ];
@@ -103,7 +103,15 @@ stdenv.mkDerivation {
   enableParallelBuilding = true;
 
   postPatch = ''
-    substituteInPlace media/drivers/media/platform/Makefile --replace "obj-y += via/" ""
+    # Disable broken code
+    substituteInPlace media/drivers/media/platform/Makefile \
+      --replace "obj-y += chips-media/" "" \
+      --replace "obj-y += mediatek/" "" \
+      --replace "obj-y += st/" "" \
+      --replace "obj-y += verisilicon/" "" \
+      --replace "obj-y += amphion/" "" \
+      --replace "obj-y += qcom/" "" \
+      #--replace "obj-y += via/" "" \
 
     cd media_build
 
@@ -117,9 +125,12 @@ stdenv.mkDerivation {
     substituteInPlace v4l/scripts/make_makefile.pl \
       --replace "/lib/modules/\$(KERNELRELEASE)" "${kernel.dev}/lib/modules/${kernel.modDirVersion}" \
       --replace "/sbin/depmod" "$(which depmod)"
+    substituteInPlace handle_updated_modules.sh --replace '/lib/modules' "${kernel.dev}/lib/modules"
+    #substituteInPlace v4l/scripts/make_kconfig.pl \
+    #  --replace "disable_config('MEDIA_CEC_SUPPORT')" "disable_config('MEDIA_CEC_SUPPORT')\ndisable_config('VIDEO_CODA')" 
   '';
 
-  preConfigure = ''
+  preBuild = ''
     make dir DIR=../media
   '';
 
