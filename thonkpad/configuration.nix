@@ -59,33 +59,7 @@ in
     LC_TIME = "fi_FI.UTF-8";
   };
 
-  /*
-  services.logind.extraConfig = ''
-    HandleLidSwitch=suspend
-  '';
-  */
-  powerManagement.enable = true;
-  #powerManagement.powertop.enable = true;
-  /*
-  services.tlp = {
-    enable = true;
-    settings = {
-      CPU_SCALING_GOVERNOR_ON_AC = "performance";
-      CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
-
-      CPU_ENERGY_PERF_POLICY_ON_AC = "performance";
-      CPU_ENERGY_PERF_POLICY_ON_BAT = "power";
-
-      CPU_MIN_PERF_ON_AC = 0;
-      CPU_MAX_PERF_ON_AC = 100;
-      CPU_MIN_PERF_ON_BAT = 0;
-      CPU_MAX_PERF_ON_BAT = 20;
-
-      START_CHARGE_THRESH_BAT0 = 40;
-      STOP_CHARGE_THRESH_BAT0 = 80;
-    };
-  };
-  */
+  #powerManagement.enable = true;
   services.power-profiles-daemon.enable = true;
 
   services.xserver = {
@@ -109,8 +83,28 @@ in
     '';
   };
 
+  location.provider = "manual";
+  location.latitude = 60.170792;
+  location.longitude = 24.934997;
+  services.redshift = {
+    enable = true;
+    brightness = {
+      day = "1";
+      night = "1";
+    };
+    temperature = {
+      day = 5500;
+      night = 1850;
+    };
+  };
+
   # Configure console keymap
   console.keyMap = "fi";
+
+  fonts.packages = with pkgs; [
+    fira-code
+    fira-code-symbols
+  ];
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
@@ -133,6 +127,9 @@ in
   };
 
   hardware.bluetooth.enable = true;
+  hardware.bluetooth.powerOnBoot = true;
+  services.blueman.enable = true;
+  hardware.enableRedistributableFirmware = true;
 
   # Enable touchpad support (enabled default in most desktopManager).
   # services.xserver.libinput.enable = true;
@@ -143,17 +140,18 @@ in
     description = "Jussi Aalto";
     extraGroups = [ "networkmanager" "wheel" "docker" ];
     packages = with pkgs; [
-      firefox
+      librewolf
       thunderbird
       nodePackages.prettier
       gimp
       stack
       #ghc
       (haskell-language-server.override { supportedGhcVersions = [ "94" ]; })
-      alacritty
       gnome.ghex
       yt-dlp
       calibre
+      microsoft-edge
+      discord
     ];
   };
 
@@ -167,10 +165,12 @@ in
         coc-prettier
         coc-tsserver
         coc-java
+        coc-rust-analyzer
       ];
       settings = {
         ignorecase = true;
         smartcase = true;
+        background = "dark";
       };
       extraConfig = ''
         set shell=/bin/sh
@@ -219,6 +219,8 @@ in
 
     xdg.configFile."xmonad/xmonad.hs".source = ./xmonad.hs;
     xdg.configFile."xmobar/xmobarrc".source = ./xmobarrc.hs;
+    xdg.configFile."kitty/kitty.conf".source = ./kitty.conf;
+    #xdg.configFile."picom.conf".source = ./picom.conf;
     home.file.".stalonetrayrc".source = ./stalonetrayrc;
 
     programs.bash = {
@@ -226,6 +228,9 @@ in
       shellAliases = {
         rg = "rg --smart-case";
       };
+      bashrcExtra = ''
+        eval "$(direnv hook bash)"
+      '';
     };
     programs.git = {
       enable = true;
@@ -237,6 +242,7 @@ in
       config = {
         fullscreen = true;
         profile = "gpu-hq";
+        hwdec = "auto";
         ytdl-format = "(bestvideo[height<=?1080][vcodec^=vp09]/bestvideo)+bestaudio/best";
         save-position-on-quit = true;
         demuxer-max-bytes = "8GiB";
@@ -299,7 +305,6 @@ in
     gnumake
     cmake
     gcc
-    clang
     clang-tools
     glibc
     htop
@@ -311,12 +316,20 @@ in
     dmenu
     nitrogen
     picom
-    xfce.xfce4-power-manager
     xorg.xsetroot
     xscreensaver
     networkmanagerapplet
     stalonetray
     surf
+    xorg.xev
+    pulseaudio
+    brightnessctl
+    feh
+    kitty
+    blueman
+    pa_applet
+    direnv
+    autorandr
   ];
 
   environment.sessionVariables.NIXOS_OZONE_WL = "1";

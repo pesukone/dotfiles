@@ -1,6 +1,7 @@
 {
-  "[json][haskell]": {
-    "coc.preferences.formatOnSave": true
+  "[json][haskell][rust]": {
+    "coc.preferences.formatOnSave": true,
+    "coc.preferences.formatOnSaveTimeout": 1000
   },
   "languageserver": {
     "haskell": {
@@ -15,5 +16,6 @@
       ],
       "filetypes": ["haskell", "lhaskell"]
     }
-  }
+  },
+  "rust-client.disableRustup": true
 }
