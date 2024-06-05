@@ -11,15 +11,19 @@
 
 import qualified Data.Map as M
 import Data.Monoid
+import Graphics.X11.ExtraTypes.XF86
+import Graphics.X11.Types
 import System.Exit
 import XMonad
 import XMonad.Hooks.DynamicLog
 import XMonad.Hooks.EwmhDesktops
 import XMonad.Hooks.ManageHelpers
+import XMonad.Hooks.Rescreen
 import XMonad.Hooks.StatusBar
 import XMonad.Hooks.StatusBar.PP
 import XMonad.Layout.LayoutBuilder
 import XMonad.Layout.MultiColumns
+import XMonad.Layout.NoBorders
 import XMonad.Layout.PerWorkspace
 import XMonad.Layout.Reflect
 import XMonad.Layout.Renamed
@@ -34,7 +38,7 @@ import XMonad.Util.WindowProperties
 -- The preferred terminal program, which is used in a binding below and by
 -- certain contrib modules.
 --
-myTerminal = "alacritty -o font.size=8"
+myTerminal = "kitty"
 
 -- The preferred browser
 myBrowser = "surf"
@@ -133,7 +137,13 @@ myKeys conf@(XConfig {XMonad.modMask = modm}) =
       -- Hotkeys to move windows up or down the layout stack
       ((modm .|. shiftMask, xK_h), sendMessage $ IncLayoutN (-1)),
       ((modm .|. shiftMask, xK_l), sendMessage $ IncLayoutN 1),
-      ((modm, xK_f), spawn myBrowser)
+      ((modm, xK_f), spawn myBrowser),
+      -- Volume control
+      ((noModMask :: KeyMask, xF86XK_AudioRaiseVolume), spawn "pactl set-sink-volume @DEFAULT_SINK@ +10%"),
+      ((noModMask :: KeyMask, xF86XK_AudioLowerVolume), spawn "pactl set-sink-volume @DEFAULT_SINK@ -10%"),
+      ((noModMask :: KeyMask, xF86XK_AudioMute), spawn "pactl set-sink-mute @DEFAULT_SINK@ toggle"),
+      ((noModMask :: KeyMask, xF86XK_MonBrightnessUp), spawn "brightnessctl set 10%+"),
+      ((noModMask :: KeyMask, xF86XK_MonBrightnessDown), spawn "brightnessctl set 10%-")
     ]
       ++
       --
@@ -191,8 +201,8 @@ myMouseBindings (XConfig {XMonad.modMask = modm}) =
 --
 myLayout =
   spacing 10 $
-    onWorkspace "dev" (renamed [Replace "Dev"] $ reflectHoriz devLayout ||| Full) $
-      tiled ||| Mirror tiled ||| threeColumn ||| simpleTabbed ||| multiColumns ||| devLayout ||| Full
+    onWorkspace "dev" (renamed [Replace "Dev"] $ smartBorders $ reflectHoriz devLayout ||| Full) $
+      smartBorders $ tiled ||| Mirror tiled ||| threeColumn ||| simpleTabbed ||| multiColumns ||| devLayout ||| Full
   where
     -- default tiling algorithm partitions the screen into two panes
     tiled = Tall nmaster delta ratio
@@ -211,7 +221,7 @@ myLayout =
     multiColumns = Mirror $ multiCol [1] 1 0.01 (-0.5)
 
     devLayout =
-      (layoutP (ClassName "Alacritty") (relBox 0 0 0.5 1) (Just $ relBox 0 0 1 1) $ reflectVert multiColumns) $
+      (layoutP (ClassName "kitty") (relBox 0 0 0.5 1) (Just $ relBox 0 0 1 1) $ reflectVert multiColumns) $
         (layoutAll (relBox 0.5 0 1 1) $ reflectHoriz simpleTabbed)
 
 ------------------------------------------------------------------------
@@ -231,13 +241,16 @@ myLayout =
 --
 myManageHook =
   composeAll
-    [ className =? "MPlayer" --> doFloat,
-      className =? "Gimp" --> doFloat,
-      resource =? "desktop_window" --> doIgnore,
-      resource =? "kdesktop" --> doIgnore,
-      isDialog --> doFloat,
-      resource =? "xmessage" --> doFloat,
-      resource =? "monero-wallet-gui" --> doFloat
+    [ className =? "MPlayer" --> doFloat
+    , className =? "Gimp" --> doFloat
+    , resource =? "desktop_window" --> doIgnore
+    , resource =? "kdesktop" --> doIgnore
+    , isDialog --> doFloat
+    , resource =? "xmessage" --> doFloat
+    , resource =? "monero-wallet-gui" --> doFloat
+    , className =? "mpv" --> doFloat
+    , className =? ".blueman-manager-wrapped" --> doFloat
+      --className =? "mpv" --> doShift ( myWorkspaces !! 1 )
     ]
 
 ------------------------------------------------------------------------
@@ -271,11 +284,15 @@ myLogHook = return ()
 myStartupHook = do
   spawnOnce "nitrogen --restore &"
   spawnOnce "picom &"
-  spawnOnce "xfce4-power-manager &"
   spawnOnce "xsetroot -cursor_name left_ptr"
   spawnOnce "xscreensaver -no-splash &"
   spawnOnce "nm-applet --sm-disable &"
   spawnOnce "stalonetray &"
+  --spawnOnce "exec sleep 5 && volumeicon &"
+  --spawnOnce "volctl &"
+  --spawnOnce "pa-applet --disable-key-grabbing &"
+  spawnOnce "feh --bg-scale https://raw.githubusercontent.com/NixOS/nixos-artwork/master/wallpapers/nixos-wallpaper-catppuccin-mocha.svg"
+  spawnOnce "blueman-applet &"
 
 myXmobarPP :: PP
 myXmobarPP =
@@ -304,6 +321,13 @@ myXmobarPP =
     red = xmobarColor "#ff5555" ""
     lowWhite = xmobarColor "#bbbbbb" ""
 
+-- Multi-monitor things
+--myAfterRescreenHook :: X ()
+--myAfterRescreenHook = spawn "fbsetroot -solid red"
+
+myRandrChangeHook :: X ()
+myRandrChangeHook = spawn "autorandr --change"
+
 ------------------------------------------------------------------------
 -- Now run xmonad with all the defaults we set up.
 
@@ -313,6 +337,7 @@ main =
   xmonad
     . ewmhFullscreen
     . ewmh
+--    . addRandrChangeHook myRandrChangeHook
     . withEasySB (statusBarProp "xmobar" (pure myXmobarPP)) defToggleStrutsKey
     $ defaults
 
